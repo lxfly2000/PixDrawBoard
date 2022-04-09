@@ -170,6 +170,7 @@ void ExecuteInstructions(HWND hWnd,char* text)
 }
 
 int scaleFactor = 1;
+int sleepTime = 0;
 
 INT_PTR CALLBACK InputDlgProcess(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -177,6 +178,7 @@ INT_PTR CALLBACK InputDlgProcess(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	{
 	case WM_INITDIALOG:
 		SendMessage(GetDlgItem(hWnd, IDC_SPIN1), UDM_SETRANGE32, 1, 32);
+		SendMessage(GetDlgItem(hWnd, IDC_SPIN2), UDM_SETRANGE32, 0, 1000);
 		SetDlgItemInt(hWnd, IDC_EDIT_SCALE, 1, TRUE);
 		break;
 	case WM_COMMAND:
@@ -185,6 +187,7 @@ INT_PTR CALLBACK InputDlgProcess(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		case IDOK:
 		{
 			scaleFactor = GetDlgItemInt(hWnd, IDC_EDIT_SCALE, NULL, TRUE);
+			sleepTime = GetDlgItemInt(hWnd, IDC_EDIT_SLEEP, NULL, TRUE);
 			char *szBuf;
 			int n = GetWindowTextLength(GetDlgItem(hWnd, IDC_EDIT_INPUT)) + 1;
 			szBuf = (char*)malloc(sizeof(char)*n);
@@ -249,6 +252,8 @@ void DrawPixel(HWND hWnd)
 	insq.pop();
 	if (insq.size())
 		PostMessage(hWnd, WM_DRAWPIXEL, 0, 0);
+	if (sleepTime)
+		Sleep(sleepTime);
 }
 
 //

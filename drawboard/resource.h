@@ -17,6 +17,9 @@
 #define IDC_EDIT1                       1001
 #define IDC_EDIT_SCALE                  1001
 #define IDC_SPIN1                       1002
+#define IDC_EDIT_SCALE2                 1005
+#define IDC_EDIT_SLEEP                  1005
+#define IDC_SPIN2                       1006
 #define ID_32771                        32771
 #define ID_MENU_OPEN_INPUT              32772
 #define IDC_STATIC                      -1
