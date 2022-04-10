@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drawboard", "drawboard\draw
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgdiff", "imgdiff\imgdiff.vcxproj", "{73CF5C2C-D2A0-44D0-84C2-EEB68174CD2B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "autosend", "autosend\autosend.vcxproj", "{53A28E6A-1939-47CD-8660-6C5B47D80904}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{73CF5C2C-D2A0-44D0-84C2-EEB68174CD2B}.Release|x64.Build.0 = Release|x64
 		{73CF5C2C-D2A0-44D0-84C2-EEB68174CD2B}.Release|x86.ActiveCfg = Release|Win32
 		{73CF5C2C-D2A0-44D0-84C2-EEB68174CD2B}.Release|x86.Build.0 = Release|Win32
+		{53A28E6A-1939-47CD-8660-6C5B47D80904}.Debug|x64.ActiveCfg = Debug|x64
+		{53A28E6A-1939-47CD-8660-6C5B47D80904}.Debug|x64.Build.0 = Debug|x64
+		{53A28E6A-1939-47CD-8660-6C5B47D80904}.Debug|x86.ActiveCfg = Debug|Win32
+		{53A28E6A-1939-47CD-8660-6C5B47D80904}.Debug|x86.Build.0 = Debug|Win32
+		{53A28E6A-1939-47CD-8660-6C5B47D80904}.Release|x64.ActiveCfg = Release|x64
+		{53A28E6A-1939-47CD-8660-6C5B47D80904}.Release|x64.Build.0 = Release|x64
+		{53A28E6A-1939-47CD-8660-6C5B47D80904}.Release|x86.ActiveCfg = Release|Win32
+		{53A28E6A-1939-47CD-8660-6C5B47D80904}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

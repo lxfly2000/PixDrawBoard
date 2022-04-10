@@ -190,7 +190,7 @@ INT_PTR CALLBACK InputDlgProcess(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			sleepTime = GetDlgItemInt(hWnd, IDC_EDIT_SLEEP, NULL, TRUE);
 			int n = GetWindowTextLengthA(GetDlgItem(hWnd, IDC_EDIT_INPUT));
 			char *szBuf = (char*)malloc(sizeof(char)*(n + 1));
-			GetDlgItemTextA(hWnd, IDC_EDIT_INPUT, szBuf, n);
+			GetDlgItemTextA(hWnd, IDC_EDIT_INPUT, szBuf, n + 1);
 			szBuf[n] = NULL;
 			ExecuteInstructions(GetParent(hWnd), szBuf);
 			free(szBuf);
