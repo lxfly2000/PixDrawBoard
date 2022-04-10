@@ -124,7 +124,7 @@ void ExecuteInstructions(HWND hWnd,char* text)
 {
 	while (text&&*text)
 	{
-		if (*text >= '0'&&*text <= '9')
+		if (*text >= '0'&&*text <= '9'||*text>='A'&&*text<='Z')
 		{
 			char*pEndlSpace = text;
 			for (; *pEndlSpace; pEndlSpace++)
@@ -188,10 +188,10 @@ INT_PTR CALLBACK InputDlgProcess(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		{
 			scaleFactor = GetDlgItemInt(hWnd, IDC_EDIT_SCALE, NULL, TRUE);
 			sleepTime = GetDlgItemInt(hWnd, IDC_EDIT_SLEEP, NULL, TRUE);
-			char *szBuf;
-			int n = GetWindowTextLength(GetDlgItem(hWnd, IDC_EDIT_INPUT)) + 1;
-			szBuf = (char*)malloc(sizeof(char)*n);
+			int n = GetWindowTextLengthA(GetDlgItem(hWnd, IDC_EDIT_INPUT));
+			char *szBuf = (char*)malloc(sizeof(char)*(n + 1));
 			GetDlgItemTextA(hWnd, IDC_EDIT_INPUT, szBuf, n);
+			szBuf[n] = NULL;
 			ExecuteInstructions(GetParent(hWnd), szBuf);
 			free(szBuf);
 		}
@@ -212,13 +212,20 @@ COLORREF ColorToColorRef(DWORD c)
 	return RGB((c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF);
 }
 
+int PosCodeToAxis(LPCSTR str)
+{
+	if (str[0] >= 'A'&&str[0] <= 'Z')
+		return str[0] - 'A';
+	return atoi(str) - 1;
+}
+
 void DrawPixel(HWND hWnd)
 {
 	std::string& strInst = insq.front();
-	if (strInst[0] >= '0'&&strInst[0] <= '9')//画图指令
+	if (strInst[0] >= '0'&&strInst[0] <= '9'||strInst[0]>='A'&&strInst[0]<='Z')//画图指令
 	{
-		char buf[16];
 		int row1, col1, row2, col2, colorIndex, type = 0;
+		char srow1[4], scol1[4], srow2[4], scol2[4];
 		for (char c : strInst)
 		{
 			if (c == '-')
@@ -226,13 +233,17 @@ void DrawPixel(HWND hWnd)
 		}
 		if (type == 1)
 		{
-			sscanf_s(strInst.c_str(), "%d.%d-%d", &row1, &col1, &colorIndex);
-			row2 = row1;
-			col2 = col1;
+			sscanf_s(strInst.c_str(), "%[^.].%[^-]-%d", srow1, ARRAYSIZE(srow1), scol1, ARRAYSIZE(scol1), &colorIndex);
+			row2 = row1 = PosCodeToAxis(srow1);
+			col2 = col1 = PosCodeToAxis(scol1);
 		}
 		else
 		{
-			sscanf_s(strInst.c_str(), "%d.%d-%d.%d-%d", &row1, &col1, &row2, &col2, &colorIndex);
+			sscanf_s(strInst.c_str(), "%[^.].%[^-]-%[^.].%[^-]-%d", srow1, ARRAYSIZE(srow1), scol1, ARRAYSIZE(scol1), srow2, ARRAYSIZE(srow2), scol2, ARRAYSIZE(scol2), &colorIndex);
+			row1 = PosCodeToAxis(srow1);
+			col1 = PosCodeToAxis(scol1);
+			row2 = PosCodeToAxis(srow2);
+			col2 = PosCodeToAxis(scol2);
 		}
 		HDC hdc = GetDC(hWnd);
 		COLORREF cref = ColorToColorRef(currentColor);

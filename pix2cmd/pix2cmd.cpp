@@ -12,6 +12,17 @@
 #include <gdiplus.h>
 #pragma comment(lib,"gdiplus.lib")
 
+std::string AxisToPosCode(int n)
+{
+	if (n < 26)
+	{
+		std::string s = "A";
+		s[0] += n;
+		return s;
+	}
+	return std::to_string(n + 1);
+}
+
 struct Stroke
 {
 	int x1, y1, x2, y2;
@@ -20,15 +31,15 @@ struct Stroke
 	{
 		std::ostringstream oss;
 		if (x1 == x2 && y1 == y2)
-			oss << y1 << "." << x1 << "-0";
+			oss << AxisToPosCode(y1) << "." << AxisToPosCode(x1) << "-0";
 		else
-			oss << y1 << "." << x1 << "-" << y2 << "." << x2 << "-0";
+			oss << AxisToPosCode(y1) << "." << AxisToPosCode(x1) << "-" << AxisToPosCode(y2) << "." << AxisToPosCode(x2) << "-0";
 		return oss.str();
 	}
 };
 std::map<Gdiplus::ARGB, std::vector<Stroke>>colorPalette;
 Gdiplus::ARGB bgColor = 0xFFFFFFFF;
-int instructionsPerLine = 1;
+int maxCharPerLine = 20;
 
 std::string ColorToHTMLColor(Gdiplus::Color c)
 {
@@ -124,13 +135,13 @@ int wmain(int argc, wchar_t*argv[])
 {
 	if (argc < 2)
 	{
-		puts("命令行：pix2cmd <图片文件> <背景颜色(RGBA)=FFFFFFFF> <每行指令数=1>");
+		puts("命令行：pix2cmd <图片文件> <背景颜色(RGBA)=FFFFFFFF> <每行最大字数=20>");
 		return 1;
 	}
 	if (argc >= 3)
 		bgColor = HTMLColorToColor(argv[2]);
 	if (argc >= 4)
-		instructionsPerLine = _wtoi(argv[3]);
+		maxCharPerLine = _wtoi(argv[3]);
 	using namespace std;
 	using namespace Gdiplus;
 	ULONG_PTR token;
@@ -153,23 +164,29 @@ int wmain(int argc, wchar_t*argv[])
 			//生成指令
 			auto v = GenerateCommands(bmp);
 			cout << "一共" << v.size() << "条指令。" << endl;
-			int endlCounter = 0;
+			int charPerLineCounter = 0;
 			for (int i = 0; i < v.size(); i++)
 			{
 				if (v[i][0] >= '0'&&v[i][0] <= '9')
 				{
-					if (endlCounter == instructionsPerLine)
-						endlCounter = 0;
-					if (endlCounter == 0)
+					size_t iLength = v[i].length();
+					if (charPerLineCounter + iLength + 1 > maxCharPerLine)
+						charPerLineCounter = 0;
+					if (charPerLineCounter == 0)
+					{
 						cout << endl;
+					}
 					else
+					{
 						cout << " ";
-					endlCounter++;
+						charPerLineCounter++;
+					}
+					charPerLineCounter += iLength;
 				}
 				else
 				{
 					cout << endl;
-					endlCounter = 0;
+					charPerLineCounter = 0;
 				}
 				cout << v[i];
 			}
