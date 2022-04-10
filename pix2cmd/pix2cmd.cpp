@@ -25,18 +25,6 @@ struct Stroke
 			oss << y1 << "." << x1 << "-" << y2 << "." << x2 << "-0";
 		return oss.str();
 	}
-	bool MergeHorizontal(const Stroke&other)
-	{
-		if (other.y1 != y1 || other.y2 != y2)
-			return false;
-		if (other.c != c)
-			return false;
-		if (min(x2, other.x2) - max(x1, other.x1) < -1)
-			return false;
-		x1 = min(x1, other.x1);
-		x2 = max(x2, other.x2);
-		return true;
-	}
 };
 std::map<Gdiplus::ARGB, std::vector<Stroke>>colorPalette;
 Gdiplus::ARGB bgColor = 0xFFFFFFFF;
@@ -53,20 +41,60 @@ std::vector<std::string> GenerateCommands(Gdiplus::Bitmap&bmp)
 {
 	using namespace Gdiplus;
 	UINT w = bmp.GetWidth(), h = bmp.GetHeight();
+	std::vector<std::vector<bool>>covered(h, std::vector<bool>(w, false));
 	for (UINT i = 0; i < h; i++)
 	{
 		for (UINT j = 0; j < w; j++)
 		{
-			Color c;
+			Color c,cNext;
 			bmp.GetPixel(j, i, &c);
 			ARGB argb = c.GetValue();
 			Stroke st{ j,i,j,i,argb };
-			if (argb != bgColor)
+			if (argb == bgColor)
 			{
-				if (colorPalette[argb].empty())
-					colorPalette[argb].push_back(st);
-				else if (!colorPalette[argb].back().MergeHorizontal(st))
-					colorPalette[argb].push_back(st);
+				covered[i][j] = true;
+			}
+			else if(!covered[i][j])
+			{
+				//向右遍历
+				while (st.x2+1<w)
+				{
+					bmp.GetPixel(st.x2 + 1, st.y2, &cNext);
+					if (argb == cNext.GetValue())
+					{
+						st.x2++;
+						covered[st.y2][st.x2] = true;
+					}
+					else
+					{
+						break;
+					}
+				}
+				//向下遍历
+				bool success = true;
+				while (st.y2 + 1 < h)
+				{
+					for (int k = st.x1; k <= st.x2; k++)
+					{
+						bmp.GetPixel(k, st.y2 + 1, &cNext);
+						if (argb != cNext.GetValue())
+						{
+							success = false;
+							break;
+						}
+					}
+					if (success)
+					{
+						st.y2++;
+						for (int k = st.x1; k <= st.x2; k++)
+							covered[st.y2][k] = true;
+					}
+					else
+					{
+						break;
+					}
+				}
+				colorPalette[argb].push_back(st);
 			}
 		}
 	}
