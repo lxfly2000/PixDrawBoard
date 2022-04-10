@@ -170,6 +170,7 @@ void DlgInit(HWND hWnd)
 {
 	SendMessage(GetDlgItem(hWnd, IDC_SPIN_WAIT_TIME), UDM_SETRANGE32, 0, 100000);
 	SendMessage(GetDlgItem(hWnd, IDC_SPIN_SLEEP_TIME), UDM_SETRANGE32, 0, 100000);
+	SendMessage(GetDlgItem(hWnd, IDC_SPIN_LINE_NUMBER_TO_SEND), UDM_SETRANGE32, 0, 100000);
 	SetDlgItemInt(hWnd, IDC_EDIT_WAIT_TIME, 6000, TRUE);
 	SetDlgItemInt(hWnd, IDC_EDIT_SLEEP_TIME, 100, TRUE);
 	SendMessage(GetDlgItem(hWnd, IDC_HOTKEY_ONOFF), HKM_SETHOTKEY, (WPARAM)VK_F2, 0);
