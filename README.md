@@ -1,5 +1,5 @@
 # PixDrawBoard
-用于直播间（ https://live.bilibili.com/256756 ）的像素画工具。
+用指令画像素画的工具。
 
 ## 示例文件
 ![Flonne](flonne-pix-draw.png)
