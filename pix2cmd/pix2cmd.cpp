@@ -14,7 +14,7 @@
 
 std::string AxisToPosCode(int n)
 {
-	if (n < 26)
+	if (n >= 9 && n < 26)
 	{
 		std::string s = "A";
 		s[0] += n;
@@ -167,7 +167,7 @@ int wmain(int argc, wchar_t*argv[])
 			int charPerLineCounter = 0;
 			for (int i = 0; i < v.size(); i++)
 			{
-				if (v[i][0] >= '0'&&v[i][0] <= '9')
+				if (v[i][0] >= '0'&&v[i][0] <= '9' || v[i][0] >= 'A'&&v[i][0] <= 'Z')
 				{
 					size_t iLength = v[i].length();
 					if (charPerLineCounter + iLength + 1 > maxCharPerLine)
