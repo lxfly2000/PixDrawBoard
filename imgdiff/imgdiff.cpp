@@ -12,6 +12,7 @@ DWORD HTMLColorToColor(wchar_t str[])
 
 DWORD bgColor = 0xFFFFFFFF;
 std::wstring pathOut = L"diff.png";
+int adjustImg2Size = 0;
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
@@ -49,13 +50,15 @@ int wmain(int argc, wchar_t*argv[])
 {
 	if (argc < 3)
 	{
-		puts("命令行：imgdiff <图片文件1> <图片文件2> <输出图片=diff.png> <背景颜色(ARGB)=FFFFFFFF>");
+		puts("命令行：imgdiff <图片文件1> <图片文件2> <输出图片=diff.png> <背景颜色(ARGB)=FFFFFFFF> <调整图片2尺寸[0:否/1:是]=0>");
 		return 1;
 	}
 	if (argc >= 4)
 		pathOut = argv[3];
 	if (argc >= 5)
 		bgColor = HTMLColorToColor(argv[4]);
+	if (argc >= 6)
+		adjustImg2Size = _wtoi(argv[5]);
 	using namespace std;
 	using namespace Gdiplus;
 	ULONG_PTR token;
@@ -78,7 +81,10 @@ int wmain(int argc, wchar_t*argv[])
 		}
 		else
 		{
-			if (bmp1.GetWidth() != bmp2.GetWidth() || bmp1.GetHeight() != bmp2.GetHeight())
+			float scale = 1.0f;
+			if (adjustImg2Size)
+				scale = (float)bmp2.GetWidth() / (float)bmp1.GetWidth();
+			else if (bmp1.GetWidth() != bmp2.GetWidth() || bmp1.GetHeight() != bmp2.GetHeight())
 				puts("两个图像的尺寸不一致，只会比较重叠的部分。");
 			int w = min(bmp1.GetWidth(), bmp2.GetWidth()), h = min(bmp1.GetHeight(), bmp2.GetHeight());
 			for (int i = 0; i < h; i++)
@@ -87,7 +93,7 @@ int wmain(int argc, wchar_t*argv[])
 				{
 					Color c1, c2;
 					bmp1.GetPixel(j, i, &c1);
-					bmp2.GetPixel(j, i, &c2);
+					bmp2.GetPixel((INT)(j*scale), (INT)(i*scale), &c2);
 					if (c1.GetValue() == c2.GetValue())
 						bmp1.SetPixel(j, i, bgColor);
 				}

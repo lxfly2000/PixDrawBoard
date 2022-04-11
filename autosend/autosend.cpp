@@ -153,7 +153,7 @@ LRESULT CALLBACK HookProcess(int nCode, WPARAM wParam, LPARAM lParam)
 		case WM_KEYUP:case WM_SYSKEYUP:
 		{
 			PKBDLLHOOKSTRUCT pk = (PKBDLLHOOKSTRUCT)lParam;
-			if (IsKeyPress(pk->vkCode, hotkeyOnoff))
+			if (IsKeyPress(pk->vkCode, hotkeyOnoff) && GetFocus() != GetDlgItem(hMainDlg, IDC_HOTKEY_ONOFF))
 			{
 				bool on = IsDlgButtonChecked(hMainDlg, IDC_CHECK_ONOFF) == BST_CHECKED ? false : true;
 				CheckDlgButton(hMainDlg, IDC_CHECK_ONOFF, on ? BST_CHECKED : BST_UNCHECKED);
@@ -221,6 +221,9 @@ INT_PTR CALLBACK DlgProcess(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDC_EDIT_INPUT:
 			if (HIWORD(wParam) == EN_CHANGE)
 				SetDlgItemInt(hWnd, IDC_EDIT_LINE_NUMBER_TO_SEND, currentLine = 0, TRUE);
+			break;
+		case IDC_HOTKEY_ONOFF:
+			hotkeyOnoff = (WORD)SendMessage(GetDlgItem(hWnd, IDC_HOTKEY_ONOFF), HKM_GETHOTKEY, 0, 0);
 			break;
 		}
 		break;
