@@ -164,8 +164,6 @@ void ExecuteInstructions(HWND hWnd,char* text)
 			}
 		}
 	}
-	InvalidateRect(hWnd, NULL, TRUE);
-	UpdateWindow(hWnd);
 	SendMessage(hWnd, WM_DRAWPIXEL, 0, 0);
 }
 
@@ -205,7 +203,11 @@ INT_PTR CALLBACK InputDlgProcess(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	return 0;
 }
 
-DWORD currentColor = 0xFFFFFFFF;
+DWORD colorPalette[16] = { 0xFFFFFFFF,
+	0xFFE53A3F,0xFFFC910C,0xFFFCE003,0xFFF1F1CD,0xFFBFD40F,
+	0xFF0EAC3C,0xFF76FBD3,0xFF0046AE,0xFF4F5298,0xFFBC209E,
+	0xFFFAB1CD,0xFF6F462D,0xFF000000,0xFF808080,0xFFFFFFFF
+};
 
 COLORREF ColorToColorRef(DWORD c)
 {
@@ -246,7 +248,7 @@ void DrawPixel(HWND hWnd)
 			col2 = PosCodeToAxis(scol2);
 		}
 		HDC hdc = GetDC(hWnd);
-		COLORREF cref = ColorToColorRef(currentColor);
+		COLORREF cref = ColorToColorRef(colorPalette[(colorIndex >= 0 && colorIndex < ARRAYSIZE(colorPalette)) ? colorIndex : 0]);
 		HBRUSH hbr = CreateSolidBrush(cref);
 		RECT rect{ col1*scaleFactor,row1*scaleFactor,(col2 + 1)*scaleFactor,(row2 + 1)*scaleFactor };
 		HGDIOBJ hOld=SelectObject(hdc, hbr);
@@ -258,7 +260,18 @@ void DrawPixel(HWND hWnd)
 	else//其他指令
 	{
 		if (strInst.substr(0, 4) == "颜色")
-			sscanf_s(strInst.c_str() + 5, "%08X", &currentColor);
+		{
+			sscanf_s(strInst.c_str() + 5, "%08X", &colorPalette[0]);
+		}
+		else if (strInst.substr(0, 2) == "C " || strInst.substr(0, 2) == "c ")
+		{
+			sscanf_s(strInst.c_str() + 2, "%08X", &colorPalette[0]);
+		}
+		else if (strInst == "清屏")
+		{
+			InvalidateRect(hWnd, NULL, TRUE);
+			UpdateWindow(hWnd);
+		}
 	}
 	insq.pop();
 	if (insq.size())
