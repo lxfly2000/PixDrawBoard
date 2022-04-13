@@ -65,7 +65,7 @@ std::vector<std::string> MinLineCommands(std::vector<std::string>v)
 	vector<string>buckets{""};
 #define leftlength(i)(maxCharPerLine+1-buckets[i].length())
 #define itemlength(i)(v[i].length()+1)
-	for (int i = 0; i < v.size(); i++)//后遍历字符串
+	for (int i = 0; i < v.size();)//后遍历字符串
 	{
 		int choose = -1;
 		for (int j = 0; j < buckets.size(); j++)//先遍历容器
@@ -77,7 +77,7 @@ std::vector<std::string> MinLineCommands(std::vector<std::string>v)
 		if (choose == -1)//没有合适的容器
 			buckets.push_back("");
 		else//在选择的容器中存下当前字符串
-			buckets[choose] += v[i] + " ";
+			buckets[choose] += v[i++] + " ";
 	}
 	//去除结尾多余空格
 	for (int i = 0; i < buckets.size();)
@@ -183,7 +183,7 @@ std::vector<std::string> GenerateCommands(Gdiplus::Bitmap&bmp)
 				predefinedColorCommands.push_back(k.ToString());
 		}
 	}
-	MinLineCommands(predefinedColorCommands);
+	predefinedColorCommands = MinLineCommands(predefinedColorCommands);
 	v.insert(v.end(), predefinedColorCommands.begin(), predefinedColorCommands.end());
 	return v;
 }
