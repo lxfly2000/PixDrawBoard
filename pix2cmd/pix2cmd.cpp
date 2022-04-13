@@ -201,7 +201,7 @@ int wmain(int argc, wchar_t*argv[])
 	bool outputToFile = false;
 	if (argc < 2)
 	{
-		puts("命令行：pix2cmd <图片文件> <背景颜色(RGBA)=FFFFFFFF> <每行最大字数=20>");
+		puts("命令行：pix2cmd <图片文件> <背景颜色(ARGB)=FFFFFFFF> <每行最大字数=20>");
 		if (wcschr(argv[0], ':') == NULL)
 			return 1;
 		outputToFile = true;
