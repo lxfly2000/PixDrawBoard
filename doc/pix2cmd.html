@@ -1,0 +1,225 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>lxfly2000&acute;s Space</title>
+    <meta name="viewport" content="width=device-width,user-scalable=no"/>
+    <link rel="icon" href="//avatars0.githubusercontent.com/u/11847274"/>
+    <style>
+    .CenterRoot{
+        max-width: 1024px;
+        margin: 0 auto;/*上下边距为0，左右使自身内容剧中自适应*/
+    }
+    .MainContents{
+        margin: 50px 0;/*上下间隔50，左右为0*/
+    }
+    p{
+        margin: 5px 0;
+    }
+    .Footer{
+        margin: 50px 0;
+        text-align: end;
+    }
+    </style>
+</head>
+<body>
+<div class="CenterRoot">
+<h1>选择要转换的文件</h1>
+<h2>Choose File</h2>
+<div class="MainContents">
+    <img id="img1" style="max-width: 120px;"/>
+    <p>选择文件：<input type="file" id="srcFile" accept="image/*,*" onchange="ReadImage();"/><!--或输入URL：<input type="url" id="srcUrl"/>--></p>
+    <p>
+        背景色：<input type="color" value="#FFFFFF" id="bgColor"/>
+        每行最大字数：<input type="number" min="20" style="width: 5em;" value="20" id="maxCharPerLine"/>
+    </p>
+    <p><textarea style="width:100%;height:8em;max-width:100%;" id="textOutput"></textarea></p>
+    <p>总计：<span id="convertStatus">0</span>行代码</p>
+    <p>
+        <input type="button" value="转换" onclick="DoConvert();"/>
+        <input type="button" value="复制" onclick="DoCopy();"/>
+    </p>
+    <div class="Footer"><a href="https://github.com/lxfly2000/PixDrawBoard">GitHub</a></div>
+</div>
+</div>
+</body>
+<script>
+    function ReadImage(){
+        "use strict";
+        /**@type {FileList}*/var inputFile=document.getElementById("srcFile").files;
+        if(inputFile.length==0){
+            return;
+        }
+        const fileReader=new FileReader();
+        fileReader.readAsDataURL(inputFile[0]);
+        fileReader.onload=()=>{document.getElementById("img1").src=fileReader.result;};
+    }
+    function _AxisToPosCode(n){
+        if(n>=9&&n<26){
+            return String.fromCharCode(65+n);
+        }
+        return n+1;
+    }
+    function _StrokeToString(stroke,pci){
+        var oss="";
+        if(stroke.x1==stroke.x2&&stroke.y1==stroke.y2){
+            oss+=_AxisToPosCode(stroke.y1)+"."+_AxisToPosCode(stroke.x1)+"-";
+        }else{
+            oss+=_AxisToPosCode(stroke.y1)+"."+_AxisToPosCode(stroke.x1)+"-"+_AxisToPosCode(stroke.y2)+"."+_AxisToPosCode(stroke.x2)+"-";
+        }
+        if(pci.get(stroke.c)===undefined){
+            oss+="0";
+        }else{
+            oss+=pci.get(stroke.c);
+        }
+        return oss;
+    }
+    function _MinLineCommands(v,maxCharPerLine){
+        v.sort((a,b)=>{return b.length-a.length;});
+        var buckets=[""];
+        for(var i=0;i<v.length;){
+            var choose=-1;
+            for(var j=0;j<buckets.length;j++){
+                if(maxCharPerLine+1-buckets[j].length>=v[i].length+1&&
+                (choose==-1||-buckets[j].length<-buckets[choose].length)){
+                    choose=j;
+                }
+            }
+            if(choose==-1){
+                buckets.push("");
+            }else{
+                buckets[choose]+=v[i++]+" ";
+            }
+        }
+        for(var i=0;i<buckets.length;){
+            while(buckets[i].length>0&&buckets[i][buckets[i].length-1]==" "){
+                buckets[i]=buckets[i].slice(0,buckets[i].length-1);
+            }
+            if(buckets[i]==""){
+                buckets.splice(i,1);
+            }else{
+                i++;
+            }
+        }
+        return buckets;
+    }
+    function DoConvert(){
+        "use strict";
+        //准备相关参数
+        const bgColor=(parseInt(document.getElementById("bgColor").value.substr(1),16)|0xFF000000)>>>0;
+        const maxCharPerLine=parseInt(document.getElementById("maxCharPerLine").value);
+        /**@type {HTMLImageElement}*/const imgTag=document.getElementById("img1");
+        if(imgTag.naturalWidth==0||imgTag.naturalHeight==0){
+            alert("请先选择一个图片文件！");
+        }
+        const canvasTag=document.createElement("canvas");
+        canvasTag.width=imgTag.naturalWidth;
+        canvasTag.height=imgTag.naturalHeight;
+        const canvas2dContext=canvasTag.getContext("2d");
+        canvas2dContext.clearRect(0,0,imgTag.naturalWidth,imgTag.naturalHeight);
+        canvas2dContext.drawImage(imgTag,0,0,imgTag.naturalWidth,imgTag.naturalHeight);
+        var colorPalette=new Map();//键：ARGB整数数据，值：Stroke类型数组
+        var predefinedColorsIndex=new Map();
+        const predefinedColors=[0xFFFFFFFF,
+        0xFFE53A3F,0xFFFC910C,0xFFFCE003,0xFFF1F1CD,0xFFBFD40F,
+        0xFF0EAC3C,0xFF76FBD3,0xFF0046AE,0xFF4F5298,0xFFBC209E,
+        0xFFFAB1CD,0xFF6F462D,0xFF000000,0xFF808080,0xFFFFFFFF];
+        for(var i=0;i<predefinedColors.length;i++){
+            predefinedColorsIndex.set(predefinedColors[i],i);
+        }
+        //参考ImageData用法：https://developer.mozilla.org/zh-CN/docs/Web/API/ImageData
+        const imgData=canvas2dContext.getImageData(0,0,imgTag.naturalWidth,imgTag.naturalHeight);
+        //建立一个图像是否已访问的数组
+        var covered=new Array(imgTag.naturalHeight);
+        for(var i=0;i<imgTag.naturalHeight;i++){
+            covered[i]=new Array(imgTag.naturalWidth);
+            for(var j=0;j<imgTag.naturalWidth;j++){
+                covered[i][j]=false;
+            }
+        }
+        //转换成ARGB格式像素
+        var argbData=new Array(imgTag.naturalHeight);
+        for(var i=0;i<imgTag.naturalHeight;i++){
+            argbData[i]=new Array(imgTag.naturalWidth);
+            for(var j=0;j<imgTag.naturalWidth;j++){
+                argbData[i][j]=(
+                (imgData.data[(i*imgTag.naturalWidth+j)*4+3]<<24)|
+                (imgData.data[(i*imgTag.naturalWidth+j)*4+0]<<16)|
+                (imgData.data[(i*imgTag.naturalWidth+j)*4+1]<<8)|
+                imgData.data[(i*imgTag.naturalWidth+j)*4+2])>>>0;
+            }
+        }
+        //遍历像素
+        for(var i=0;i<imgTag.naturalHeight;i++){
+            for(var j=0;j<imgTag.naturalWidth;j++){
+                var st={x1:j,y1:i,x2:j,y2:i,c:argbData[i][j]};
+                if(argbData[i][j]==bgColor){
+                    covered[i][j]=true;
+                }else if(!covered[i][j]){
+                    //向右遍历
+                    while(st.x2+1<imgTag.naturalWidth){
+                        if(st.c==argbData[st.y2][st.x2+1]){
+                            st.x2++;
+                            covered[st.y2][st.x2]=true;
+                        }else{
+                            break;
+                        }
+                    }
+                    //向下遍历
+                    var success=true;
+                    while (st.y2 + 1 < imgTag.naturalHeight){
+                        for (var k = st.x1; k <= st.x2; k++){
+                            if (st.c != argbData[st.y2+1][k]){
+                                success = false;
+                                break;
+                            }
+                        }if (success){
+                            st.y2++;
+                            for (var k = st.x1; k <= st.x2; k++){
+                                covered[st.y2][k] = true;
+                            }
+                        }else{
+                            break;
+                        }
+                    }
+                    if(colorPalette.get(st.c)===undefined){
+                        colorPalette.set(st.c,[st]);
+                    }else{
+                        colorPalette.get(st.c).push(st);
+                    }
+                }
+            }
+        }
+        var v=[], predefinedColorCommands=[], customColorCommands=[];
+        v.push("尺寸 "+imgTag.naturalWidth);
+        //键：ARGB整数数据，值：Stroke类型数组
+        for(let[mkey,mvalue]of colorPalette){
+            if(predefinedColorsIndex.get(mkey)===undefined){
+                v.push("颜色 "+(mkey&0xFFFFFF).toString(16));
+                for(let k of mvalue){
+                    customColorCommands.push(_StrokeToString(k,predefinedColorsIndex));
+                }
+                customColorCommands=_MinLineCommands(customColorCommands,maxCharPerLine);
+                v.push(...customColorCommands);
+                customColorCommands=[];
+            }else{
+                for(let k of mvalue){
+                    predefinedColorCommands.push(_StrokeToString(k,predefinedColorsIndex));
+                }
+            }
+        }
+        predefinedColorCommands=_MinLineCommands(predefinedColorCommands,maxCharPerLine);
+        v.push(...predefinedColorCommands);
+        document.getElementById("convertStatus").textContent=v.length;
+        var te=document.getElementById("textOutput");
+        te.value="";
+        for(let s of v){
+            te.value+=s+"\n";
+        }
+    }
+    function DoCopy(){
+        "use strict";
+        document.getElementById("textOutput").select();
+        document.execCommand("Copy");
+    }
+</script>
+</html>
