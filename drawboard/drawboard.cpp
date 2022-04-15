@@ -216,9 +216,17 @@ COLORREF ColorToColorRef(DWORD c)
 
 int PosCodeToAxis(LPCSTR str)
 {
-	if (str[0] >= 'A'&&str[0] <= 'Z')
-		return str[0] - 'A';
-	return atoi(str) - 1;
+	char c = str[0];
+	if (c >= 65 && c <= 90) {//用字母表示的
+		int n = 0;
+		for (int i = 0; i < strlen(str); i++) {
+			n = n * 26 + str[i] - 65;
+		}
+		return n;
+	}
+	else {//用数字表示的
+		return atoi(str) - 1;
+	}
 }
 
 void DrawPixel(HWND hWnd)
