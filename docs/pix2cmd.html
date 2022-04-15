@@ -26,7 +26,7 @@
 <h1>选择要转换的文件</h1>
 <h2>Choose File</h2>
 <div class="MainContents">
-    <img src="https://lightningmaker.live/api/getimage?url=lightningmaker.live:5001" id="imgServer" style="max-width: 120px;"/>
+    <img src="https://lightningmaker.live/api/getimage?url=lightningmaker.live:5001" id="imgServer" style="max-width: 120px;" crossorigin="anonymous"/>
     <img id="img1" style="max-width: 120px;"/>
     <p>
         选择文件：<input type="file" id="srcFile" accept="image/*,*" onchange="ReadImage();"/>
@@ -132,7 +132,7 @@
     }
     function GetDifferenceARGBData(bgColor,argbData1,argbData2){
         var scale=argbData2[0].length/argbData1[0].length;
-        var w=Math.min(argbData1[0].length,argbData2[0].length),h=Math.max(argbData1.length,argbData2.length);
+        var w=Math.min(argbData1[0].length,argbData2[0].length),h=Math.min(argbData1.length,argbData2.length);
         for (var i=0;i<h;i++){
             for (var j=0;j<w;j++){
                 if(argbData1[i][j]===argbData2[Math.floor(i*scale)][Math.floor(j*scale)]){
