@@ -219,7 +219,11 @@
         //键：ARGB整数数据，值：Stroke类型数组
         for(let[mkey,mvalue]of colorPalette){
             if(predefinedColorsIndex.get(mkey)===undefined){
-                v.push("颜色 "+(mkey&0xFFFFFF).toString(16));
+                var strColor=(mkey&0xFFFFFF).toString(16);
+                for(var i=6-strColor.length;i>0;i--){
+                    strColor="0"+strColor;
+                }
+                v.push("颜色 "+strColor);
                 for(let k of mvalue){
                     customColorCommands.push(_StrokeToString(k,predefinedColorsIndex));
                 }
