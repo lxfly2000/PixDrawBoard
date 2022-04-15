@@ -26,8 +26,13 @@
 <h1>选择要转换的文件</h1>
 <h2>Choose File</h2>
 <div class="MainContents">
+    <img src="https://lightningmaker.live/api/getimage?url=lightningmaker.live:5001" id="imgServer" style="max-width: 120px;"/>
     <img id="img1" style="max-width: 120px;"/>
-    <p>选择文件：<input type="file" id="srcFile" accept="image/*,*" onchange="ReadImage();"/><!--或输入URL：<input type="url" id="srcUrl"/>--></p>
+    <p>
+        选择文件：<input type="file" id="srcFile" accept="image/*,*" onchange="ReadImage();"/>
+        <!--或输入URL：<input type="url" id="srcUrl"/>-->
+        <input type="checkbox" id="checkCompare"/><label for="checkCompare">比较差异</label>
+    </p>
     <p>
         背景色：<input type="color" value="#FFFFFF" id="bgColor"/>
         每行最大字数：<input type="number" min="20" style="width: 5em;" value="20" id="maxCharPerLine"/>
@@ -102,40 +107,15 @@
         }
         return buckets;
     }
-    function DoConvert(){
-        "use strict";
-        //准备相关参数
-        const bgColor=(parseInt(document.getElementById("bgColor").value.substr(1),16)|0xFF000000)>>>0;
-        const maxCharPerLine=parseInt(document.getElementById("maxCharPerLine").value);
-        /**@type {HTMLImageElement}*/const imgTag=document.getElementById("img1");
-        if(imgTag.naturalWidth==0||imgTag.naturalHeight==0){
-            alert("请先选择一个图片文件！");
-        }
+    function GetImageARGBData(imgTag){
         const canvasTag=document.createElement("canvas");
         canvasTag.width=imgTag.naturalWidth;
         canvasTag.height=imgTag.naturalHeight;
         const canvas2dContext=canvasTag.getContext("2d");
         canvas2dContext.clearRect(0,0,imgTag.naturalWidth,imgTag.naturalHeight);
         canvas2dContext.drawImage(imgTag,0,0,imgTag.naturalWidth,imgTag.naturalHeight);
-        var colorPalette=new Map();//键：ARGB整数数据，值：Stroke类型数组
-        var predefinedColorsIndex=new Map();
-        const predefinedColors=[0xFFFFFFFF,
-        0xFFE53A3F,0xFFFC910C,0xFFFCE003,0xFFF1F1CD,0xFFBFD40F,
-        0xFF0EAC3C,0xFF76FBD3,0xFF0046AE,0xFF4F5298,0xFFBC209E,
-        0xFFFAB1CD,0xFF6F462D,0xFF000000,0xFF808080,0xFFFFFFFF];
-        for(var i=0;i<predefinedColors.length;i++){
-            predefinedColorsIndex.set(predefinedColors[i],i);
-        }
         //参考ImageData用法：https://developer.mozilla.org/zh-CN/docs/Web/API/ImageData
         const imgData=canvas2dContext.getImageData(0,0,imgTag.naturalWidth,imgTag.naturalHeight);
-        //建立一个图像是否已访问的数组
-        var covered=new Array(imgTag.naturalHeight);
-        for(var i=0;i<imgTag.naturalHeight;i++){
-            covered[i]=new Array(imgTag.naturalWidth);
-            for(var j=0;j<imgTag.naturalWidth;j++){
-                covered[i][j]=false;
-            }
-        }
         //转换成ARGB格式像素
         var argbData=new Array(imgTag.naturalHeight);
         for(var i=0;i<imgTag.naturalHeight;i++){
@@ -147,6 +127,49 @@
                 (imgData.data[(i*imgTag.naturalWidth+j)*4+1]<<8)|
                 imgData.data[(i*imgTag.naturalWidth+j)*4+2])>>>0;
             }
+        }
+        return argbData;
+    }
+    function GetDifferenceARGBData(bgColor,argbData1,argbData2){
+        var scale=argbData2[0].length/argbData1[0].length;
+        var w=Math.min(argbData1[0].length,argbData2[0].length),h=Math.max(argbData1.length,argbData2.length);
+        for (var i=0;i<h;i++){
+            for (var j=0;j<w;j++){
+                if(argbData1[i][j]===argbData2[Math.floor(i*scale)][Math.floor(j*scale)]){
+                    argbData1[i][j]=bgColor;
+                }
+            }
+        }
+    }
+    function DoConvert(){
+        "use strict";
+        //准备相关参数
+        const bgColor=(parseInt(document.getElementById("bgColor").value.substr(1),16)|0xFF000000)>>>0;
+        const maxCharPerLine=parseInt(document.getElementById("maxCharPerLine").value);
+        /**@type {HTMLImageElement}*/const imgTag=document.getElementById("img1");
+        if(imgTag.naturalWidth==0||imgTag.naturalHeight==0){
+            alert("请先选择一个图片文件！");
+        }
+        var colorPalette=new Map();//键：ARGB整数数据，值：Stroke类型数组
+        var predefinedColorsIndex=new Map();
+        const predefinedColors=[0xFFFFFFFF,
+        0xFFE53A3F,0xFFFC910C,0xFFFCE003,0xFFF1F1CD,0xFFBFD40F,
+        0xFF0EAC3C,0xFF76FBD3,0xFF0046AE,0xFF4F5298,0xFFBC209E,
+        0xFFFAB1CD,0xFF6F462D,0xFF000000,0xFF808080,0xFFFFFFFF];
+        for(var i=0;i<predefinedColors.length;i++){
+            predefinedColorsIndex.set(predefinedColors[i],i);
+        }
+        //建立一个图像是否已访问的数组
+        var covered=new Array(imgTag.naturalHeight);
+        for(var i=0;i<imgTag.naturalHeight;i++){
+            covered[i]=new Array(imgTag.naturalWidth);
+            for(var j=0;j<imgTag.naturalWidth;j++){
+                covered[i][j]=false;
+            }
+        }
+        var argbData=GetImageARGBData(imgTag);
+        if(document.getElementById("checkCompare").checked){
+            argbData=GetDifferenceARGBData(bgColor,argbData,GetImageARGBData(document.getElementById("imgServer")));
         }
         //遍历像素
         for(var i=0;i<imgTag.naturalHeight;i++){
