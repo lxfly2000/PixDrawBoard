@@ -150,6 +150,7 @@
         /**@type {HTMLImageElement}*/const imgTag=document.getElementById("img1");
         if(imgTag.naturalWidth==0||imgTag.naturalHeight==0){
             alert("请先选择一个图片文件！");
+            return;
         }
         var colorPalette=new Map();//键：ARGB整数数据，值：Stroke类型数组
         var predefinedColorsIndex=new Map();
