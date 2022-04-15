@@ -220,9 +220,9 @@ int PosCodeToAxis(LPCSTR str)
 	if (c >= 65 && c <= 90) {//用字母表示的
 		int n = 0;
 		for (int i = 0; i < strlen(str); i++) {
-			n = n * 26 + str[i] - 65;
+			n = n * 26 + str[i] - 64;
 		}
-		return n;
+		return n - 1;
 	}
 	else {//用数字表示的
 		return atoi(str) - 1;

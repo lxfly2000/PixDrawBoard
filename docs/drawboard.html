@@ -106,9 +106,9 @@
         if(c>=65&&c<=90){//用字母表示的
             var n=0;
             for(var i=0;i<str.length;i++){
-                n=n*26+str.charCodeAt(i)-65;
+                n=n*26+str.charCodeAt(i)-64;
             }
-            return n;
+            return n-1;
         }else{//用数字表示的
             return parseInt(str)-1;
         }
