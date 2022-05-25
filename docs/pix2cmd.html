@@ -36,6 +36,7 @@
         背景色：<input type="color" value="#FFFFFF" id="bgColor"/>
         每行最大字数：<input type="number" min="20" style="width: 5em;" value="20" id="maxCharPerLine"/>
         <input type="checkbox" id="checkCompare"/><label for="checkCompare">比较差异</label>
+        <input type="checkbox" id="checkOnlyPalette"/><label for="checkOnlyPalette">仅用预置颜色</label>
     </p>
     <p><textarea style="width:100%;height:8em;max-width:100%;" id="textOutput"></textarea></p>
     <p>总计：<span id="convertStatus">0</span>行代码</p>
@@ -59,12 +60,14 @@
         fileReader.onload=()=>{document.getElementById("img1").src=fileReader.result;};
     }
     function _AxisToPosCode(n){
+        "use strict";
         if(n>=9&&n<26){
             return String.fromCharCode(65+n);
         }
         return n+1;
     }
     function _StrokeToString(stroke,pci){
+        "use strict";
         var oss="";
         if(stroke.x1==stroke.x2&&stroke.y1==stroke.y2){
             oss+=_AxisToPosCode(stroke.y1)+"."+_AxisToPosCode(stroke.x1)+"-";
@@ -79,6 +82,7 @@
         return oss;
     }
     function _MinLineCommands(v,maxCharPerLine){
+        "use strict";
         v.sort((a,b)=>{return b.length-a.length;});
         var buckets=[""];
         for(var i=0;i<v.length;){
@@ -108,6 +112,7 @@
         return buckets;
     }
     function GetImageARGBData(imgTag){
+        "use strict";
         const canvasTag=document.createElement("canvas");
         canvasTag.width=imgTag.naturalWidth;
         canvasTag.height=imgTag.naturalHeight;
@@ -131,6 +136,7 @@
         return argbData;
     }
     function GetDifferenceARGBData(bgColor,argbData1,argbData2){
+        "use strict";
         var scale=argbData2[0].length/argbData1[0].length;
         var w=Math.min(argbData1[0].length,argbData2[0].length),h=Math.min(argbData1.length,argbData2.length);
         for (var i=0;i<h;i++){
@@ -141,6 +147,124 @@
             }
         }
         return argbData1;
+    }
+    //色值近似度看我就够了二(LAB模型+CIEDE2000)：https://www.jianshu.com/p/86e8c3acd41d
+    function RGBtoXYZ(r,g,b){
+        "use strict";
+        const _gamma=function(x){return x>0.04045?Math.pow((x+0.055)/1.055,2.4):(x/12.92);};
+        var gammaR=_gamma(r),gammaG=_gamma(g),gammaB=_gamma(b);
+        var x=0.4124564*gammaR+0.3575761*gammaG+0.1804375*gammaB;
+        var y=0.2126729*gammaR+0.7151522*gammaG+0.0721750*gammaB;
+        var z=0.0193339*gammaR+0.1191920*gammaG+0.9503041*gammaB;
+        return[x,y,z];
+    }
+    function XYZtoLAB(x,y,z){
+        "use strict";
+        const param_1_3 = 1.0 / 3.0;
+        const param_16_116 = 16.0 / 116.0;
+        const Xn = 0.950456;
+        const Yn = 1.0;
+        const Zn = 1.088754;
+        x/=Xn;
+        y/=Yn;
+        z/=Zn;
+        var fX=x>0.008856?Math.pow(x,param_1_3):7.787*x+param_16_116;
+        var fY=y>0.008856?Math.pow(y,param_1_3):7.787*y+param_16_116;
+        var fZ=z>0.008856?Math.pow(z,param_1_3):7.787*z+param_16_116;
+        var l=116.0*fY-16.0;
+        //L必须为非负数
+        l=l>0.0?l:0.0;
+        var a=500.0*(fX-fY);
+        var b=200.0*(fY-fZ);
+        return[l,a,b];
+    }
+    function DeltaE(l1,a1,b1,l2,a2,b2){
+        "use strict";
+        //参考《现代颜色技术原理及应用》P88数据
+        var kL=1, kC=1, kH=1;
+        //---
+        const caiDu=function(a,b){return Math.pow(a * a + b * b, 0.5);};
+        const seDiaoJiao=function(a,b){
+            var h = 0,hab = 0;
+            //此处改进由于纯黑色的a为0，所以而除数不能为0，除0意味着除以无限接近0，所以结果为无限大(负数为无限小)，所以反正切的值为+90°或-90°(270°)，经测试无论正负对结果无影响。
+            if (a == 0) {
+                return 90;
+            }
+            h = (180 / Math.PI) * Math.atan(b/a); //有正有负
+            if (a>0&&b>0) {
+                hab = h;
+            }else if (a<0&&b>0) {
+                hab = 180 + h;
+            }else if (a<0&&b<0) {
+                hab = 180 + h;
+            }else {
+                //a>0&&b<0
+                hab = 360 + h;
+            }
+            return hab;
+        };
+        var mean_Cab = caiDu(a1,b1) + caiDu(a2,b2) / 2;
+        var mean_Cab_pow7 = Math.pow(mean_Cab, 7);       //两彩度平均值的7次方
+        var G = 0.5*(1-Math.pow(mean_Cab_pow7 / (mean_Cab_pow7 + Math.pow(25, 7)), 0.5));
+
+        var LL1 = l1;
+        var aa1 = a1 * (1 + G);
+        var bb1 = b1;
+        var LL2 = l2;
+        var aa2 = a2 * (1 + G);
+        var bb2 = b2;
+        //两样本的彩度值
+        var CC1 = caiDu(aa1,bb1);
+        var CC2 = caiDu(aa2,bb2);
+        //两样本的色调角
+        var hh1 = seDiaoJiao(aa1,bb1);
+        var hh2 = seDiaoJiao(aa2,bb2);
+
+        var delta_LL = LL1 - LL2;
+        var delta_CC = CC1 - CC2;
+        var delta_hh = seDiaoJiao(aa1,bb1) - seDiaoJiao(aa2,bb2);
+        var delta_HH = 2 * Math.sin(Math.PI*delta_hh / 360) * Math.pow(CC1 * CC2, 0.5);
+
+        //---第三步---
+        //计算公式中的加权函数SL,SC,SH,T
+        var mean_LL = (LL1 + LL2) / 2;
+        var mean_CC = (CC1 + CC2) / 2;
+        var mean_hh = (hh1 + hh2) / 2;
+
+        var SL = 1 + 0.015 * Math.pow(mean_LL - 50, 2) / Math.pow(20 + Math.pow(mean_LL - 50, 2), 0.5);
+        var SC = 1 + 0.045 * mean_CC;
+        var T=1-0.17*Math.cos((mean_hh-30)*Math.PI/180)+0.24*Math.cos((2*mean_hh)*Math.PI/180)+0.32*Math.cos((3*mean_hh+6)*Math.PI/180)-0.2*Math.cos((4*mean_hh-63)*Math.PI/180);
+        var SH = 1 + 0.015 * mean_CC * T;
+        //---第四步---
+        //计算公式中的RT
+        var mean_CC_pow7 = Math.pow(mean_CC, 7);
+        var RC = 2 * Math.pow(mean_CC_pow7 / (mean_CC_pow7 + Math.pow(25, 7)), 0.5);
+        var delta_xita = 30 * Math.exp(-Math.pow((mean_hh - 275) / 25, 2));//△θ 以°为单位
+        var RT = -Math.sin((2 * delta_xita) * Math.PI / 180) * RC;
+
+        var L_item = delta_LL / (kL * SL);
+        var C_item = delta_CC / (kC * SC);
+        var H_item = delta_HH / (kH * SH);
+        return Math.pow(L_item * L_item + C_item * C_item + H_item * H_item + RT * C_item * H_item, 0.5);
+    }
+    function ToPaletteColor(color,palette){
+        "use strict";
+        var minDeltaIndex=0;
+        var minDeltaE=2147483647;
+        var cr=(color>>>16)&0xFF,cg=(color>>>8)&0xFF,cb=(color>>>0)&0xFF;
+        var cxyz=RGBtoXYZ(cr,cg,cb);
+        var clab=XYZtoLAB(cxyz[0],cxyz[1],cxyz[2]);
+        for(var i=0;i<palette.length;i++){
+            var pr=(palette[i]>>>16)&0xFF,pg=(palette[i]>>>8)&0xFF,pb=(palette[i]>>>0)&0xFF;
+            var pxyz=RGBtoXYZ(pr,pg,pb);
+            var plab=XYZtoLAB(pxyz[0],pxyz[1],pxyz[2]);
+            var deltaE=DeltaE(clab[0],clab[1],clab[2],plab[0],plab[1],plab[2]);
+            if(deltaE<minDeltaE){
+                minDeltaE=deltaE;
+                minDeltaIndex=i;
+            }
+        }
+        return palette[minDeltaIndex];
     }
     function DoConvert(){
         "use strict";
@@ -172,6 +296,13 @@
         var argbData=GetImageARGBData(imgTag);
         if(document.getElementById("checkCompare").checked){
             argbData=GetDifferenceARGBData(bgColor,argbData,GetImageARGBData(document.getElementById("imgServer")));
+        }
+        if(document.getElementById("checkOnlyPalette").checked){
+            for(var i=0;i<imgTag.naturalHeight;i++){
+                for(var j=0;j<imgTag.naturalWidth;j++){
+                    argbData[i][j]=ToPaletteColor(argbData[i][j],predefinedColors.slice(1));
+                }
+            }
         }
         //遍历像素
         for(var i=0;i<imgTag.naturalHeight;i++){
