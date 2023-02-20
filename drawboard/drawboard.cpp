@@ -8,6 +8,8 @@
 #include <queue>
 #include <CommCtrl.h>
 
+#pragma comment(lib,"comctl32.lib")
+
 #define MAX_LOADSTRING 100
 #define WM_DRAWPIXEL (WM_USER+2000)
 
@@ -32,6 +34,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: 在此处放置代码。
+	InitCommonControls();
 
     // 初始化全局字符串
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);

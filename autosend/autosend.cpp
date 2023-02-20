@@ -7,6 +7,7 @@
 #include "resource.h"
 
 #pragma comment(lib,"shlwapi.lib")
+#pragma comment(lib,"comctl32.lib")
 
 #define ID_TIMER_WAIT 1
 
@@ -239,5 +240,6 @@ INT_PTR CALLBACK DlgProcess(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 int WINAPI wWinMain(HINSTANCE hInst,HINSTANCE hPrevInst,LPWSTR param,int iShow)
 {
+	InitCommonControls();
 	return DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG_AUTOSEND), NULL, DlgProcess);
 }
